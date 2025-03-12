@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+    please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+    (Here they are set differently than their defaults in xml2rfc v1.32) -->
+
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+    (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="no" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+
+<?rfc private="" ?>
+
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude" submissionType="IRTF" category="exp" docName="draft-asaeda-icnrg-ccnxcversioning-00" updates="8569, 8609" ipr="trust200902">
+
+  <!-- ***** FRONT MATTER ***** -->
+
+  <front>
+    <!-- The abbreviated title is used in the page header - it is only necessary if the 
+        full title is longer than 39 characters -->
+
+    <title>CCNx Content Versioning</title>
+
+    <!-- add 'role="editor"' below for the editors if appropriate -->
+
+    <!-- Another author who claims to be an editor -->
+
+
+    <author initials="H" surname="Asaeda" fullname="Hitoshi Asaeda">
+      <organization abbrev="NICT">National Institute of Information and Communications Technology</organization>
+      <address>
+        <postal>
+          <street/>
+          <region>Koganei, Tokyo</region>
+          <code>184-8795</code>
+          <country>Japan</country>
+        </postal>
+        <email>asaeda@nict.go.jp</email>
+        <!-- uri and facsimile elements may also be added -->
+      </address>
+    </author>
+
+    <author initials="H.H." surname="Hlaing" fullname="Htet Htet Hlaing">
+      <organization abbrev="NICT">National Institute of Information and Communications Technology</organization>
+      <address>
+        <postal>
+          <street/>
+          <region>Koganei, Tokyo</region>
+          <code>184-8795</code>
+          <country>Japan</country>
+        </postal>
+        <email>htethtethlaing@nict.go.jp</email>
+      </address>
+    </author>
+
+    <author fullname="Marc Mosko" initials="M.E." surname="Mosko">
+      <organization></organization>
+      <address>
+       <postal>
+         <street/>
+         <city>Kensington</city>
+         <region>California</region>
+         <code>94707</code>
+         <country>USA</country>
+       </postal>
+       <phone></phone>
+       <email>marc@mosko.org</email>
+     </address>
+    </author>
+
+    <date/>
+
+    <!-- If the month and year are both specified and are the current ones, xml2rfc will fill 
+        in the current day for you. If only the current year is specified, xml2rfc will fill 
+	 in the current day and month for you. If the year is not the current one, it is 
+	 necessary to specify at least a month (xml2rfc assumes day="1" if not specified for the 
+	 purpose of calculating the expiry date).  With drafts it is normally sufficient to 
+	 specify just the year. -->
+
+    <!-- Meta-data Declarations -->
+
+    <workgroup>ICNRG</workgroup>
+
+    <keyword>ICN</keyword>
+    <keyword>Information-centric Networking</keyword>
+    <keyword>CCNx</keyword>
+
+    <!-- Keywords will be incorporated into HTML output
+        files in a meta tag but they have no effect on text or nroff
+        output. If you submit your draft to the RFC Editor, the
+        keywords will be used for the search engine. -->
+
+    <abstract>
+      <t>This document defines a method for content versioning in CCNx, enabling the differentiation of content sharing the same name using version numbers. This document updates <xref target="RFC8569">RFC8569</xref> and <xref target="RFC8609">RFC8609</xref>.
+      </t>
+
+    </abstract>
+  </front>
+
+  <middle>   
+    <!--
+    <section title="Change Log">
+      <texttable anchor="changelog" title="Change Log">
+        <ttcol align="center">Date</ttcol>
+        <ttcol align="center">Version</ttcol> 
+        <ttcol align="left">Changes</ttcol>
+        
+        <c>Jan. 5, 2015</c>
+        <c>3</c>
+        <c>References to path segment replaced with name segment. </c>
+        
+      </texttable> 
+    </section>
+    -->
+    
+    <section title="Introduction">
+      <t>Content is constantly updated, yet content names often remain unchanged. This document defines a method for content versioning in CCNx by introducing a new CCNx Name Segment type with TLV encoding to specify content version numbers. Each version number is an unsigned integer that increments by 1 for successive versions. Given a name with a serial number, the next version number can be computed accordingly. In addition, this document describes a method for discovering the current (latest) version number of content.  It introduces
+        a new TLV type CurrentVersion that is used in a ContentObject Payload to wrap a CCNx LINK TLV.</t>
+
+      <t>Notably, content versioning is not mandatory in CCNx, nor are consumers required to specify a version number to retrieve unversioned content.</t>
+    </section>
+       
+    <section anchor="terminology"><name>Terminology</name>
+	    <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 <xref target="RFC2119"/> <xref target="RFC8174"/> when, and only when, they appear in all capitals, as shown here.</t>
+
+      <section anchor="definitions"><name>Definitions</name>
+        <t>This document follows the definitions provided in <xref target="RFC8793"/> for general ICN-related terms and in <xref target="RFC8569"/> and <xref target="RFC8609"/> for CCNx-specific terms. Moreover, the following terms are defined:</t>
+    	  <dl>
+        <dt><strong>Versioned content</strong></dt><dd>Content assigned a version number in its name, allowing differentiation by version.</dd>
+        <dt><strong>Unversioned content</strong></dt><dd>Content that is not assigned a version number and remains undistinguished by version.</dd>
+    	  <dt><strong>Version Query</strong></dt><dd>An Interest message sent from a consumer to a producer to retrieve the latest version number of specific content. The packet type for a Version Query is PT_INTEREST. It does not request the content object itself.</dd>
+		    <dt><strong>Version Response</strong></dt><dd>A Data message sent from a producer to a consumer containing a LINK to latest version of the content. The packet type of a Version Response is PT_CONTENT. It does not include the content object itself.</dd>
+	      </dl>
+  	  </section>
+    </section>
+
+    <section anchor="protocol" title="Protocol Description">
+      <t>This document introduces one new CCNx Name Segment TLV: the Version TLV. As the Version TLV is optional, consumers can send Interest packets without including it (see below). Nevertheless, if consumers wish to retrieve a specific version of content (e.g., the latest version), they MUST specify the version number in the Version TLV and send an Interest packet with this information.</t>
+
+      <t>Version numbers establish a sequential order of names and are represented as unsigned integers. They are encoded using network byte order with the minimum necessary bytes. The value of "0" is represented as a single byte (%x00). Version numbers are incremented for consecutive versions of preceding name segments. There is no predefined upper limit for version numbers; the maximum is determined solely by the available number of bytes allocated in the name component.</t>
+
+      <t>To retrieve versioned content, consumers specify the content's version number in the Version TLV of a CCNx Name Segment within an Interest packet. Producers or forwarders (e.g., caching routers) respond with the corresponding Data packet using the standard CCNx Content Object to Interest matching rules
+        <xref target="RFC8569" section="9"/>.</t>
+
+      <t>If a consumer sends an Interest including a Version TLV for unversioned content, the content name is mismatched; therefore, the Interest packet is discarded. Similarly, if a consumer sends an Interest without a Version TLV for versioned content, the content name is mismatched, and the Interest packet is discarded. If a consumer requests versioned content by specifying an unknown version number in Version TLV, the Interest packet is discarded.</t>
+
+      <t>If consumers want to ensure that they get the latest version's content, they need to specify the latest version number of the content. To query the latest version number of versioned content, this document defines a special Interest-Data exchange called Version Query-Response (described in <xref target="version_interest" /> and <xref target="version_data" />). When consumers send interests for versioned content with Version TLV but no version number specified (i.e., the value specified in the Length field of the Version TLV is 0), producer returns a content object with a Payload of a CurrentVersion TLV that wraps a CCNx LINK <xref target="RFC8569" section="6"/> to the latest versioned name.</t>
+
+      <t>This document assumes that caching routers manage and process version numbers for versioned content in addition to handling content names. The specifications outlined in this document will be implemented in Cefore <xref target="Asaeda2019" /><xref target="Cefore" />.</t>
+
+      <!--<t>A "GONE" PayloadType means that this version is a terminal version. All prior
+        versions should be interpreted as deleted.  A user, however, may publish more "DATA"
+        after the terminal version, if he decides to un-delete it.</t>
+      <t>[HA] Marc, do we need above specification, GONE and DATA? I don't understand this strong motivation or reasons why it is necessary.</t>-->
+    </section>
+
+    <section anchor="types" title="TLV Types">
+      <t>This section specifies the optional TLV types used to communicate content versions.</t>
+
+      <section anchor="names" title="Version">
+        <t>CCNx versioning introduces a new CCNx Name Segment type: Version.</t>
+
+        <texttable anchor="name_tlvs" title="Version">
+          <ttcol align="center">Type</ttcol>
+          <ttcol align="center">Abbrev</ttcol>
+          <ttcol align="center">Name</ttcol>
+          <ttcol align="left">Description</ttcol>
+          <c>%x0004</c>
+          <c>T_VERSION</c>
+          <c>Version Number</c>
+          <c>The Version Number, as an unsigned integer in network byte order without leading zeros. The value of zero is represented as the single byte %x00.</c>
+         </texttable>
+
+        <figure anchor="versioning-tlv"><name>Version TLV</name>
+          <artwork align="left"><![CDATA[
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+--------------+
+|          T_VERSION            |             Length           |
++---------------+---------------+---------------+--------------+
+|     variable length integer   /
++---------------+---------------+
+]]></artwork>
+        </figure>
+
+        <figure anchor='Segment_Type' title="CCNx Name Segment Type Namespace">
+          <artwork align="center">
+     Code         Type name
+==============    ========================================
+    %x0000        Reserved [RFC8609]
+    %x0001        T_NAMESEGMENT [RFC8609]
+    %x0002        T_IPID [RFC8609]
+    %x0003        T_NONCE [RFC9508]
+    %x0004        T_VERSION
+    %x0005        T_CHUNK [I-D.mosko-icnrg-ccnxchunking]
+    %x0006        T_REFLEXIVE_NAME
+                  [I-D.irtf-icnrg-reflexive-forwarding]
+%x0007-%x000F     Unassigned
+%x0010-%x0013     Reserved [RFC8609]
+%x0014-0x0FFE     Unassigned
+    %x0FFF        T_ORG [RFC8609]
+%x1000-0x1FFF     T_APP:00 - T_APP:4096 [RFC8609]
+%x2000-0xFFFF     Unassigned
+          </artwork>
+        </figure>
+
+        <t>An Interest packet may include a chunk number <xref target="I-D.mosko-icnrg-ccnxchunking" />, as well as content name and version number. If the version number is included in the CCNx Name TLV, the Version TLV specifying the version number MUST immediately follow the last T_NAMESEGMENT specifying the content name. If both the version number and chunk number are included to identify the content, the Version TLV MUST be followed by the ChunkNumber TLV.</t>
+      </section>
+
+      <section anchor="cur_ver" title="CurrentVersion">
+        <t>CCNx versioning introduces a new CCNx registry "CCNx Versioning."  This
+          registry identifies TLVs that are part of the CCNx Version Request-Response exchange.</t>
+
+        <texttable anchor="cur_ver_tlvs" title="CurrentVersion">
+          <ttcol align="center">Type</ttcol>
+          <ttcol align="center">Abbrev</ttcol>
+          <ttcol align="center">Name</ttcol>
+          <ttcol align="left">Description</ttcol>
+          <c>%x0007</c>
+          <c>T_CURVERSION</c>
+          <c>Current Version Name</c>
+          <c>The Current Version Name wraps a CCNx LINK  to the most recent versioned content.</c>
+         </texttable>
+
+        <figure anchor="curversioning-tlv"><name>CurrentVersion TLV</name>
+          <artwork align="left"><![CDATA[
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+--------------+
+|         T_CURVERSION          |             Length           |
++---------------+---------------+---------------+--------------+
+/     CCNx LINK encoding        /
++---------------+---------------+
+]]></artwork>
+        </figure>
+
+        <figure anchor='Message_Type' title="CCNx Message Type Namespace">
+          <artwork align="center">
+     Code         Type name
+==============    ========================================
+    %x0000        T_NAME [RFC8609]
+    %x0001        T_PAYLOAD [RFC8609]
+    %x0002        T_KEYIDRESTR [RFC8609]
+    %x0003        T_OBJHASHRESTR [RFC8609]
+    %x0004        Unassigned
+    %x0005        T_PAYLDTYPE [RFC8609]
+    %x0006        T_EXPIRY [RFC8609]
+    %x0007        T_CURVERSION
+    %x0008        T_ENDCHUNK [I-D.mosko-icnrg-ccnxchunking]
+%x0009-%x000C     Reserved [RFC8609]
+    %x000D        T_DISC_REQ [RFC9344]
+    %x000E        T_DISC_REPLY [RFC9344]
+    %x0FFE        T_PAD [RFC8609]
+    %x0FFF        T_ORG [RFC8609]
+%x1000-%x1FFF     Reserved [RFC8609]
+          </artwork>
+        </figure>
+
+      </section>
+
+      <section anchor="examples" title="Examples">
+        <t>Below are examples of version names using the labeled content identity URI scheme in human-readable form (ccnx:). In the ccnx: URI form, it is denoted as "Ver". In the following example, the content producer publishes a JPG with version number is 1.</t>
+
+        <figure>
+          <artwork align="left"><![CDATA[
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=1
+]]></artwork>
+        </figure>
+
+        <t>The following examples indicate content identified using its name, version number, and chunk number.</t>
+
+        <figure>
+          <artwork align="left"><![CDATA[
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=1/Chunk=0  --
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=1/Chunk=1  EndChunkNumber=3
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=1/Chunk=2  --
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=1/Chunk=3  EndChunkNumber=3
+]]></artwork>
+        </figure>
+
+        <t>[HA] What if the version number is changed during chunk transmission? Since it may be intentionally requested, we cannot prohibit this as an error. Furthermore, we cannot recognize it is an error. Do we need to say something about this situation?</t>
+        <figure>
+          <artwork align="left"><![CDATA[
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=1/Chunk=0  --
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=0/Chunk=1  EndChunkNumber=2
+ccnx:/Name=ietf.org/Name=abc.jpg/Ver=2/Chunk=2  EndChunkNumber=2
+]]></artwork>
+        </figure>
+      </section>
+
+    </section>
+
+    <section anchor="version_interest" title="Version Query">
+      <t>When consumers need to determine the latest version number of content, they can send a special Interest packet called a <strong>Version Query</strong>. Version Query includes CCNx Name Segment TLV(s) specifying the content name and a Version TLV with no version number (i.e., the Length field in the Version TLV is set to 0) (see <xref target="no-version-num" />). After producers or forwarders aware of the latest version number receive the Version Query, they transmit a <strong>Version Response</strong> as described in <xref target="version_data" />. After obtaining the latest version number, consumers can send an Interest packet specifying both the content name and version number to retrieve the desired content object. Version Queries are ignored and silently discarded for unversioned content.</t>
+
+      <figure anchor="no-version-num"><name>Version Query containing Version TLV with no version number</name>
+        <artwork align="left"><![CDATA[
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+--------------+
+|          T_VERSION            |        Length (= 0x00)       |
++---------------+---------------+---------------+--------------+
+]]></artwork>
+      </figure>
+
+      <t>A Version Query is a standard CCNx Interest.  A Version Query normally travels to the authoritative
+        publisher via CCNx routing.  The publisher responds to the Version Query with a LINK to the
+        current vesion.  The respone may be cached (see <xref target="version_data"/>).</t>
+
+      <t>It is possible that a CCNx name includes multiple Version fields, for example if an annotation is
+        published as an extension of a previous name.  For example <tt>ccnx:/Name=foo/Name=x/Ver=1/Name=biblio/Ver=2/Chunk=3</tt>.  Here, we have a first object <tt>ccnx:/Name=foo/Name=x/Ver=1</tt> and a second
+        bibliographic object.  In this example, the object "x" is of version 1 and the bibliography information
+        is of version 2.</t>
+
+      <t>A Version Query may contain one or more empty version numbers and the responding
+        publisher will fill in the authoritative information for the terminal version and the corresponding fields
+        for earlier version numbers.  The Version Query will be routed to the longest-matching publisher,
+        who corresponds to the terminal version number.  That publisher only has the current version number
+        of it's name.  Any prior fields only indicate the version on to which this extension name rides.</t>
+    </section>
+
+    <section anchor="version_data" title="Version Response">
+      <t>Producers send a Version Response as reply to a Version Query. The Version Response contains a Data packet with a CurrentVersion TLV wrapping a CCNx LINK in the Payload.  The Link identifies the current
+        version name, and SHOULD include at least one of the ContentObjectHashRestriction or KeyIdRestriction.</t>
+
+      <t>If a Version Query is sent for unversioned content, the Version Response includes an empty Current Version
+      TLV (see <xref target="no-curversion-num" />).</t>
+
+      <figure anchor="no-curversion-num"><name>Version Response containing CurrentVersion TLV with no version number</name>
+        <artwork align="left"><![CDATA[
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++---------------+---------------+---------------+--------------+
+|         T_CURVERSION          |        Length (= 0x00)       |
++---------------+---------------+---------------+--------------+
+]]></artwork>
+      </figure>
+
+      <t>The Version Response MAY include a Recommended Cache Time (RCT) and MUST include
+        an appropriate ExpiryTime.  If the response includes an RCT, then intermediate forwarders may
+        cache the content and respond with it within the ExpiryTime.  The ExpiryTime should be based
+        on the publisher's concept of content update interval.</t>
+
+      <t>A Version Response SHOULD be singed by a key trusted for the Verion's namespace.</t>
+    </section>
+
+    <section anchor="IANA"><name>IANA Considerations</name>
+
+    	<t>As per <xref target="RFC8126" />, this section makes an assignment in one existing registry in the "Content-Centric Networking (CCNx)" registry group. The registration procedure is "RFC Required", which requires only that this document be published as an RFC.</t>
+
+    	<section anchor="sec.iana_segtype" title="CCNx Name Segment Type Registry">
+      	<t>As shown in <xref target='Segment_Type' />, this document defines one CCNx Name Segment type, T_VERSION, whose suggested value is %x0004.</t>
+    	</section>
+
+     	<section anchor="sec.iana_mestype" title="CCNx Message Type Registry">
+      	<t>As shown in <xref target='Message_Type' />, this document defines one CCNx Message type, T_CURVERSION, whose suggested value is %x0007.</t>
+    	</section>
+
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+<!--      <section anchor="hide_ver" title="Security Considerations">
+        <t>The content owner may want to hide the latest version number from malicious nodes or unauthenticated users. To support such case, producers MAY simply discard Version Queries.</t>
+      </section>
+
+      <section anchor="ddos" title="Amplification Attack">-->
+      <t>Malicious nodes could generate excessive or invalid Version Queries to overload forwarders and/or producers on the network, provoking unnecessary Version Responses. To mitigate this risk, forwarders or producers MAY randomly ignore Version Queries. This approach reduces processing overhead, ensures fair handling of Version Queries, and minimizes traffic amplification risks. The rate-limiting strategy is left to the implementation of forwarders and producers.</t>
+
+      <t>Version query flooding is a reason that a publisher may want to use a Recommended Cache Time on
+        a Version Response.  This allows intermediate forwarders to offload Version Query responses, so long
+        as the RCT can match the expected update interval of the content.</t>
+
+      <t>Signing a Version Response is a potential computation DDoS on the publisher.  This is why a publisher
+        should include a reasonable ExpiryTime on its response so it can respond from cache when possible.</t>
+    </section>
+
+    <section anchor="Acknowledgements" title="Acknowledgements">
+      <t></t>
+    </section>
+     
+  </middle>
+
+  <!--  *****BACK MATTER ***** -->
+
+  <back>
+    <!-- References split into informative and normative -->
+
+    <references title="Normative References">
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8569.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8126.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8609.xml"/>
+    </references>
+
+    <references title="Informative References">
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8793.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml3/reference.I-D.irtf-icnrg-reflexive-forwarding.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml3/reference.I-D.mosko-icnrg-ccnxchunking.xml"/>
+
+     	<reference anchor="Asaeda2019" target="https://search.ieice.org/bin/summary.php?id=e102-b_9_1792">
+     	  <front>
+       		<title>Cefore: Software Platform Enabling Content-Centric Networking and Beyond</title>
+       		<author surname="Asaeda" initials="H."/>
+       		<author surname="Ooka" initials="A."/>
+       		<author surname="Matsuzono" initials="K."/>
+       		<author surname="Li" initials="R."/>
+       		<date month="September" year="2019"/>
+      	  </front>
+     	  <seriesInfo name="IEICE Transactions on Communications," value="Vol.E102-B, No.9"/>
+     	  <seriesInfo name="DOI" value="10.1587/transcom.2018EII0001"/>
+     	</reference>
+
+     	<reference anchor="Cefore" target="https://github.com/cefore/">
+     	  <front>
+     	    <title>Cefore</title>
+     	    <author surname="Cefore development team"/>
+     	  </front>
+     	</reference>
+    </references>
+
+  </back>
+</rfc>
